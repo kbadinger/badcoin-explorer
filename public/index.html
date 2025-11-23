@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Badcoin Explorer</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🪙 Badcoin Explorer</h1>
+            <p class="subtitle">Custom Blockchain Explorer</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Network Status -->
+        <section class="status-section">
+            <h2>Network Status</h2>
+            <div class="status-grid" id="status">
+                <div class="status-card">
+                    <div class="status-label">Block Height</div>
+                    <div class="status-value" id="blockHeight">-</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-label">Difficulty</div>
+                    <div class="status-value" id="difficulty">-</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-label">Connections</div>
+                    <div class="status-value" id="connections">-</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-label">Sync Progress</div>
+                    <div class="status-value" id="syncProgress">-</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search -->
+        <section class="search-section">
+            <h2>Search</h2>
+            <div class="search-bar">
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Block height, block hash, transaction ID, or address..."
+                >
+                <button onclick="search()">Search</button>
+            </div>
+            <div id="searchResult"></div>
+        </section>
+
+        <!-- Latest Blocks -->
+        <section>
+            <h2>Latest Blocks</h2>
+            <div class="table-container">
+                <table id="blocksTable">
+                    <thead>
+                        <tr>
+                            <th>Height</th>
+                            <th>Hash</th>
+                            <th>Time</th>
+                            <th>Transactions</th>
+                            <th>Size</th>
+                        </tr>
+                    </thead>
+                    <tbody id="blocksBody">
+                        <tr><td colspan="5" class="loading">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Latest Transactions -->
+        <section>
+            <h2>Latest Transactions</h2>
+            <div class="table-container">
+                <table id="transactionsTable">
+                    <thead>
+                        <tr>
+                            <th>Transaction ID</th>
+                            <th>Block</th>
+                            <th>Time</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsBody">
+                        <tr><td colspan="4" class="loading">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Badcoin Explorer | Built with ❤️ by the Badcoin Community</p>
+            <p><a href="https://github.com/kbadinger/badcoin-explorer" target="_blank">GitHub</a></p>
+        </div>
+    </footer>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
