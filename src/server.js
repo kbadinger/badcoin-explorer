@@ -174,6 +174,104 @@ app.get('/api/address/:address', async (req, res) => {
   }
 });
 
+// Rich list
+app.get('/api/richlist', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 100;
+    const addresses = await Address.find({ balance: { $gt: 0 } })
+      .sort({ balance: -1 })
+      .limit(limit)
+      .select('-_id address balance totalReceived totalSent txCount');
+
+    res.json(addresses);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Network statistics
+app.get('/api/stats', async (req, res) => {
+  try {
+    const [totalBlocks, totalTxs, totalAddresses, recentBlocks] = await Promise.all([
+      Block.countDocuments(),
+      Transaction.countDocuments(),
+      Address.countDocuments(),
+      Block.find().sort({ height: -1 }).limit(100).select('time difficulty')
+    ]);
+
+    // Calculate total supply from blocks (coinbase rewards)
+    const blockRewards = await Block.aggregate([
+      { $group: { _id: null, total: { $sum: '$reward' } } }
+    ]);
+    const totalSupply = blockRewards[0]?.total || 0;
+
+    // Calculate average block time from recent blocks
+    let avgBlockTime = 600; // default 10 min
+    if (recentBlocks.length > 1) {
+      const times = recentBlocks.map(b => b.time.getTime());
+      const diffs = [];
+      for (let i = 0; i < times.length - 1; i++) {
+        diffs.push(Math.abs(times[i] - times[i + 1]));
+      }
+      avgBlockTime = diffs.reduce((a, b) => a + b, 0) / diffs.length / 1000; // convert to seconds
+    }
+
+    res.json({
+      totalBlocks,
+      totalTransactions: totalTxs,
+      totalAddresses,
+      totalSupply,
+      avgBlockTime: Math.round(avgBlockTime)
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Chart data - Block times
+app.get('/api/charts/blocktimes', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 100;
+    const blocks = await Block.find()
+      .sort({ height: -1 })
+      .limit(limit)
+      .select('height time');
+
+    const data = [];
+    for (let i = 0; i < blocks.length - 1; i++) {
+      const timeDiff = Math.abs(blocks[i].time - blocks[i + 1].time) / 1000; // seconds
+      data.push({
+        height: blocks[i].height,
+        time: timeDiff
+      });
+    }
+
+    res.json(data.reverse());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Chart data - Difficulty
+app.get('/api/charts/difficulty', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 100;
+    const blocks = await Block.find()
+      .sort({ height: -1 })
+      .limit(limit)
+      .select('height difficulty');
+
+    const data = blocks.reverse().map(b => ({
+      height: b.height,
+      difficulty: b.difficulty
+    }));
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Search endpoint
 app.get('/api/search/:query', async (req, res) => {
   try {

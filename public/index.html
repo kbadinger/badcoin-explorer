@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Badcoin Explorer</title>
     <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <header>
@@ -25,21 +26,82 @@
             <h2>Network Status</h2>
             <div class="status-grid" id="status">
                 <div class="status-card">
-                    <div class="status-label">Block Height</div>
+                    <div class="status-label">
+                        Block Height
+                        <span class="tooltip" data-tip="Current blockchain height">?</span>
+                    </div>
                     <div class="status-value" id="blockHeight">-</div>
                 </div>
                 <div class="status-card">
-                    <div class="status-label">Difficulty</div>
+                    <div class="status-label">
+                        Difficulty
+                        <span class="tooltip" data-tip="Mining difficulty - higher = harder to mine">?</span>
+                    </div>
                     <div class="status-value" id="difficulty">-</div>
                 </div>
                 <div class="status-card">
-                    <div class="status-label">Connections</div>
+                    <div class="status-label">
+                        Connections
+                        <span class="tooltip" data-tip="Number of connected peers">?</span>
+                    </div>
                     <div class="status-value" id="connections">-</div>
                 </div>
                 <div class="status-card">
-                    <div class="status-label">Sync Progress</div>
+                    <div class="status-label">
+                        Sync Progress
+                        <span class="tooltip" data-tip="Explorer database sync percentage">?</span>
+                    </div>
                     <div class="status-value" id="syncProgress">-</div>
                 </div>
+                <div class="status-card">
+                    <div class="status-label">
+                        Total Supply
+                        <span class="tooltip" data-tip="Total BAD coins in circulation">?</span>
+                    </div>
+                    <div class="status-value" id="totalSupply">-</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-label">
+                        Avg Block Time
+                        <span class="tooltip" data-tip="Average time between blocks (seconds)">?</span>
+                    </div>
+                    <div class="status-value" id="avgBlockTime">-</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts -->
+        <section>
+            <h2>Network Charts</h2>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h3>Block Time (Last 100 Blocks)</h3>
+                    <canvas id="blockTimeChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h3>Difficulty (Last 100 Blocks)</h3>
+                    <canvas id="difficultyChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Rich List -->
+        <section>
+            <h2>Rich List - Top 50 Addresses</h2>
+            <div class="table-container">
+                <table id="richlistTable">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Address</th>
+                            <th>Balance</th>
+                            <th>Transactions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="richlistBody">
+                        <tr><td colspan="4" class="loading">Loading...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 

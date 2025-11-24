@@ -1,5 +1,7 @@
 const API_BASE = window.location.origin + '/api';
 
+let blockTimeChart, difficultyChart;
+
 // Format numbers with commas
 function formatNumber(num) {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -19,15 +21,129 @@ function truncateHash(hash, length = 16) {
 // Load network status
 async function loadStatus() {
     try {
-        const response = await fetch(`${API_BASE}/status`);
-        const data = await response.json();
+        const [statusData, statsData] = await Promise.all([
+            fetch(`${API_BASE}/status`).then(r => r.json()),
+            fetch(`${API_BASE}/stats`).then(r => r.json())
+        ]);
 
-        document.getElementById('blockHeight').textContent = formatNumber(data.blockchain.blocks);
-        document.getElementById('difficulty').textContent = data.blockchain.difficulty.toFixed(2);
-        document.getElementById('connections').textContent = data.network.connections;
-        document.getElementById('syncProgress').textContent = `${data.sync.percentage}%`;
+        document.getElementById('blockHeight').textContent = formatNumber(statusData.blockchain.blocks);
+        document.getElementById('difficulty').textContent = statusData.blockchain.difficulty.toFixed(2);
+        document.getElementById('connections').textContent = statusData.network.connections;
+        document.getElementById('syncProgress').textContent = `${statusData.sync.percentage}%`;
+        document.getElementById('totalSupply').textContent = formatNumber(Math.round(statsData.totalSupply)) + ' BAD';
+        document.getElementById('avgBlockTime').textContent = statsData.avgBlockTime + 's';
     } catch (error) {
         console.error('Error loading status:', error);
+    }
+}
+
+// Load and render charts
+async function loadCharts() {
+    try {
+        const [blockTimeData, difficultyData] = await Promise.all([
+            fetch(`${API_BASE}/charts/blocktimes`).then(r => r.json()),
+            fetch(`${API_BASE}/charts/difficulty`).then(r => r.json())
+        ]);
+
+        // Block Time Chart
+        const btCtx = document.getElementById('blockTimeChart').getContext('2d');
+        if (blockTimeChart) blockTimeChart.destroy();
+        blockTimeChart = new Chart(btCtx, {
+            type: 'line',
+            data: {
+                labels: blockTimeData.map(d => d.height),
+                datasets: [{
+                    label: 'Block Time (seconds)',
+                    data: blockTimeData.map(d => d.time),
+                    borderColor: '#fff',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#fff' }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#999' },
+                        grid: { color: '#32373c' }
+                    },
+                    y: {
+                        ticks: { color: '#999' },
+                        grid: { color: '#32373c' }
+                    }
+                }
+            }
+        });
+
+        // Difficulty Chart
+        const diffCtx = document.getElementById('difficultyChart').getContext('2d');
+        if (difficultyChart) difficultyChart.destroy();
+        difficultyChart = new Chart(diffCtx, {
+            type: 'line',
+            data: {
+                labels: difficultyData.map(d => d.height),
+                datasets: [{
+                    label: 'Difficulty',
+                    data: difficultyData.map(d => d.difficulty),
+                    borderColor: '#fff',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#fff' }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#999' },
+                        grid: { color: '#32373c' }
+                    },
+                    y: {
+                        ticks: { color: '#999' },
+                        grid: { color: '#32373c' }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error loading charts:', error);
+    }
+}
+
+// Load rich list
+async function loadRichList() {
+    try {
+        const response = await fetch(`${API_BASE}/richlist?limit=50`);
+        const addresses = await response.json();
+
+        const tbody = document.getElementById('richlistBody');
+        tbody.innerHTML = '';
+
+        addresses.forEach((addr, index) => {
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td><span class="hash clickable" onclick="viewAddress('${addr.address}')">${truncateHash(addr.address, 20)}</span></td>
+                <td>${formatNumber(addr.balance.toFixed(2))} BAD</td>
+                <td>${formatNumber(addr.txCount)}</td>
+            `;
+        });
+    } catch (error) {
+        console.error('Error loading rich list:', error);
+        document.getElementById('richlistBody').innerHTML = '<tr><td colspan="4" class="error">Failed to load rich list</td></tr>';
     }
 }
 
@@ -177,10 +293,13 @@ document.getElementById('searchInput')?.addEventListener('keypress', (e) => {
 loadStatus();
 loadBlocks();
 loadTransactions();
+loadCharts();
+loadRichList();
 
 // Refresh every 30 seconds
 setInterval(() => {
     loadStatus();
     loadBlocks();
     loadTransactions();
+    loadCharts();
 }, 30000);
