@@ -51,6 +51,8 @@ header {
 header h1 {
     font-size: 2.5rem;
     margin-bottom: 0.5rem;
+    color: #e74c3c;
+    font-weight: bold;
 }
 
 header .subtitle {
@@ -223,6 +225,17 @@ td {
     color: var(--text);
 }
 
+td a {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+td a:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
 tbody tr:hover {
     background: var(--secondary);
 }
@@ -230,18 +243,19 @@ tbody tr:hover {
 .hash {
     font-family: 'Courier New', monospace;
     font-size: 0.9rem;
-    color: var(--secondary);
+    color: #3498db;
     word-break: break-all;
 }
 
 .clickable {
     cursor: pointer;
-    color: var(--secondary);
+    color: #3498db;
     text-decoration: underline;
 }
 
 .clickable:hover {
-    color: var(--primary);
+    color: #2980b9;
+    text-decoration: underline;
 }
 
 .loading {
