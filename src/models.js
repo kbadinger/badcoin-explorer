@@ -42,12 +42,7 @@ const transactionSchema = new mongoose.Schema({
   outputs: [{
     value: Number,
     n: Number,
-    scriptPubKey: {
-      asm: String,
-      hex: String,
-      type: String,
-      addresses: [String]
-    }
+    scriptPubKey: mongoose.Schema.Types.Mixed
   }],
   totalInput: Number,
   totalOutput: Number,
