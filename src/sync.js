@@ -73,6 +73,15 @@ class BlockchainSync {
       const exists = await Block.findOne({ height });
       if (exists) return;
 
+      // Calculate block reward from coinbase transaction (first tx)
+      let reward = 0;
+      if (blockData.tx && blockData.tx.length > 0) {
+        const coinbaseTx = blockData.tx[0];
+        if (coinbaseTx.vout) {
+          reward = coinbaseTx.vout.reduce((sum, vout) => sum + vout.value, 0);
+        }
+      }
+
       // Save block
       const block = new Block({
         height: blockData.height,
@@ -88,7 +97,8 @@ class BlockchainSync {
         chainwork: blockData.chainwork,
         previousblockhash: blockData.previousblockhash,
         nextblockhash: blockData.nextblockhash,
-        txCount: blockData.tx ? blockData.tx.length : 0
+        txCount: blockData.tx ? blockData.tx.length : 0,
+        reward: reward
       });
 
       await block.save();
