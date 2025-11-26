@@ -29,8 +29,8 @@ app.get('/api/status', async (req, res) => {
     const [networkStatus, syncStatus, blockCount, txCount] = await Promise.all([
       NetworkStatus.findOne({ key: 'main' }),
       SyncStatus.findOne({ key: 'main' }),
-      Block.countDocuments(),
-      Transaction.countDocuments()
+      Block.estimatedDocumentCount(),
+      Transaction.estimatedDocumentCount()
     ]);
 
     if (!networkStatus) {
