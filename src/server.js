@@ -201,9 +201,9 @@ app.get('/api/richlist', async (req, res) => {
 app.get('/api/stats', async (req, res) => {
   try {
     const [totalBlocks, totalTxs, totalAddresses, recentBlocks] = await Promise.all([
-      Block.countDocuments(),
-      Transaction.countDocuments(),
-      Address.countDocuments(),
+      Block.estimatedDocumentCount(),
+      Transaction.estimatedDocumentCount(),
+      Address.estimatedDocumentCount(),
       Block.find().sort({ height: -1 }).limit(100).select('time difficulty')
     ]);
 
