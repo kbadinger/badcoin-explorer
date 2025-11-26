@@ -4,7 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const path = require('path');
 const rpc = require('./rpc');
-const { Block, Transaction, Address, SyncStatus } = require('./models');
+const { Block, Transaction, Address, SyncStatus, NetworkStatus } = require('./models');
 require('dotenv').config();
 
 const app = express();
@@ -23,42 +23,43 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // API Routes
 
-// Network status
+// Network status - reads from DB (populated by sync worker)
 app.get('/api/status', async (req, res) => {
   try {
-    const [blockchainInfo, networkInfo, mempoolInfo, hashrate, syncStatus, blockCount, txCount] = await Promise.all([
-      rpc.getBlockchainInfo(),
-      rpc.getNetworkInfo(),
-      rpc.getMempoolInfo(),
-      rpc.getNetworkHashps(),
+    const [networkStatus, syncStatus, blockCount, txCount] = await Promise.all([
+      NetworkStatus.findOne({ key: 'main' }),
       SyncStatus.findOne({ key: 'main' }),
       Block.countDocuments(),
       Transaction.countDocuments()
     ]);
 
+    if (!networkStatus) {
+      return res.status(503).json({ error: 'Network status not yet available. Sync worker may still be starting.' });
+    }
+
     res.json({
       network: {
-        version: networkInfo.version,
-        subversion: networkInfo.subversion,
-        protocolversion: networkInfo.protocolversion,
-        connections: networkInfo.connections
+        version: networkStatus.version,
+        subversion: networkStatus.subversion,
+        protocolversion: networkStatus.protocolversion,
+        connections: networkStatus.connections
       },
       blockchain: {
-        chain: blockchainInfo.chain,
-        blocks: blockchainInfo.blocks,
-        headers: blockchainInfo.headers,
-        difficulty: blockchainInfo.difficulty,
-        mediantime: blockchainInfo.mediantime
+        chain: networkStatus.chain,
+        blocks: networkStatus.blocks,
+        headers: networkStatus.headers,
+        difficulty: networkStatus.difficulty,
+        mediantime: networkStatus.mediantime
       },
       mining: {
-        hashrate: hashrate,
-        mempoolSize: mempoolInfo.size,
-        mempoolBytes: mempoolInfo.bytes
+        hashrate: networkStatus.hashrate,
+        mempoolSize: networkStatus.mempoolSize,
+        mempoolBytes: networkStatus.mempoolBytes
       },
       sync: {
         indexedBlocks: syncStatus ? syncStatus.lastBlockHeight + 1 : 0,
-        totalBlocks: blockchainInfo.blocks,
-        percentage: syncStatus ? ((syncStatus.lastBlockHeight + 1) / blockchainInfo.blocks * 100).toFixed(2) : 0,
+        totalBlocks: networkStatus.blocks,
+        percentage: syncStatus ? ((syncStatus.lastBlockHeight + 1) / networkStatus.blocks * 100).toFixed(2) : 0,
         lastSyncTime: syncStatus ? syncStatus.lastSyncTime : null
       },
       database: {

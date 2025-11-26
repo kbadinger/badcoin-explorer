@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const rpc = require('./rpc');
-const { Block, Transaction, Address, SyncStatus } = require('./models');
+const { Block, Transaction, Address, SyncStatus, NetworkStatus } = require('./models');
 require('dotenv').config();
 
 class BlockchainSync {
@@ -21,6 +21,7 @@ class BlockchainSync {
     while (true) {
       try {
         await this.syncBlocks();
+        await this.updateNetworkStatus();
         await this.sleep(parseInt(process.env.SYNC_INTERVAL) || 5000);
       } catch (error) {
         console.error('Sync error:', error.message);
@@ -186,6 +187,39 @@ class BlockchainSync {
       await addr.save();
     } catch (error) {
       // Ignore address update errors for now
+    }
+  }
+
+  async updateNetworkStatus() {
+    try {
+      const [blockchainInfo, networkInfo, mempoolInfo, hashrate] = await Promise.all([
+        rpc.getBlockchainInfo(),
+        rpc.getNetworkInfo(),
+        rpc.getMempoolInfo(),
+        rpc.getNetworkHashps()
+      ]);
+
+      await NetworkStatus.findOneAndUpdate(
+        { key: 'main' },
+        {
+          version: networkInfo.version,
+          subversion: networkInfo.subversion,
+          protocolversion: networkInfo.protocolversion,
+          connections: networkInfo.connections,
+          chain: blockchainInfo.chain,
+          blocks: blockchainInfo.blocks,
+          headers: blockchainInfo.headers,
+          difficulty: blockchainInfo.difficulty,
+          mediantime: blockchainInfo.mediantime,
+          hashrate: hashrate,
+          mempoolSize: mempoolInfo.size,
+          mempoolBytes: mempoolInfo.bytes,
+          updatedAt: new Date()
+        },
+        { upsert: true }
+      );
+    } catch (error) {
+      console.error('Error updating network status:', error.message);
     }
   }
 

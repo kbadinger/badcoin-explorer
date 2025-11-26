@@ -73,6 +73,28 @@ const syncStatusSchema = new mongoose.Schema({
   syncing: { type: Boolean, default: false }
 });
 
+// Network Status Schema - stores RPC data for fast API access
+const networkStatusSchema = new mongoose.Schema({
+  key: { type: String, unique: true, default: 'main' },
+  // Network info
+  version: Number,
+  subversion: String,
+  protocolversion: Number,
+  connections: Number,
+  // Blockchain info
+  chain: String,
+  blocks: Number,
+  headers: Number,
+  difficulty: Number,
+  mediantime: Number,
+  // Mining info
+  hashrate: Number,
+  mempoolSize: Number,
+  mempoolBytes: Number,
+  // Timestamps
+  updatedAt: { type: Date, default: Date.now }
+});
+
 // Create indexes for performance
 blockSchema.index({ time: -1 });
 transactionSchema.index({ blockTime: -1 });
@@ -83,5 +105,6 @@ module.exports = {
   Block: mongoose.model('Block', blockSchema),
   Transaction: mongoose.model('Transaction', transactionSchema),
   Address: mongoose.model('Address', addressSchema),
-  SyncStatus: mongoose.model('SyncStatus', syncStatusSchema)
+  SyncStatus: mongoose.model('SyncStatus', syncStatusSchema),
+  NetworkStatus: mongoose.model('NetworkStatus', networkStatusSchema)
 };
