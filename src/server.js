@@ -23,8 +23,12 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // API Routes
 
-// Network status
-app.get('/api/status', async (req, res) => {
+// Status cache
+let statusCache = null;
+let statusCacheTime = 0;
+const STATUS_CACHE_TTL = 5000; // 5 seconds
+
+async function updateStatusCache() {
   try {
     const [blockchainInfo, networkInfo, mempoolInfo, hashrate, syncStatus, blockCount, txCount] = await Promise.all([
       rpc.getBlockchainInfo(),
@@ -36,7 +40,7 @@ app.get('/api/status', async (req, res) => {
       Transaction.countDocuments()
     ]);
 
-    res.json({
+    statusCache = {
       network: {
         version: networkInfo.version,
         subversion: networkInfo.subversion,
@@ -64,8 +68,36 @@ app.get('/api/status', async (req, res) => {
       database: {
         blocks: blockCount,
         transactions: txCount
-      }
-    });
+      },
+      cachedAt: Date.now()
+    };
+    statusCacheTime = Date.now();
+  } catch (error) {
+    console.error('Error updating status cache:', error.message);
+  }
+}
+
+// Update cache every 5 seconds
+setInterval(updateStatusCache, STATUS_CACHE_TTL);
+// Initial cache population
+updateStatusCache();
+
+// Network status
+app.get('/api/status', async (req, res) => {
+  try {
+    // Return cache if fresh, otherwise fetch new data
+    if (statusCache && (Date.now() - statusCacheTime) < STATUS_CACHE_TTL) {
+      return res.json(statusCache);
+    }
+
+    // Cache miss or stale - update and return
+    await updateStatusCache();
+    if (statusCache) {
+      return res.json(statusCache);
+    }
+
+    // Fallback if cache failed
+    throw new Error('Unable to fetch status');
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
