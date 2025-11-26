@@ -26,9 +26,11 @@ mongoose.connect(process.env.MONGODB_URI)
 // Network status
 app.get('/api/status', async (req, res) => {
   try {
-    const [blockchainInfo, networkInfo, syncStatus, blockCount, txCount] = await Promise.all([
+    const [blockchainInfo, networkInfo, mempoolInfo, hashrate, syncStatus, blockCount, txCount] = await Promise.all([
       rpc.getBlockchainInfo(),
       rpc.getNetworkInfo(),
+      rpc.getMempoolInfo(),
+      rpc.getNetworkHashps(),
       SyncStatus.findOne({ key: 'main' }),
       Block.countDocuments(),
       Transaction.countDocuments()
@@ -47,6 +49,11 @@ app.get('/api/status', async (req, res) => {
         headers: blockchainInfo.headers,
         difficulty: blockchainInfo.difficulty,
         mediantime: blockchainInfo.mediantime
+      },
+      mining: {
+        hashrate: hashrate,
+        mempoolSize: mempoolInfo.size,
+        mempoolBytes: mempoolInfo.bytes
       },
       sync: {
         indexedBlocks: syncStatus ? syncStatus.lastBlockHeight + 1 : 0,

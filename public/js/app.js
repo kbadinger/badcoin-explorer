@@ -18,6 +18,17 @@ function truncateHash(hash, length = 16) {
     return hash.substring(0, length) + '...';
 }
 
+// Format hashrate to human readable
+function formatHashrate(hashrate) {
+    if (hashrate >= 1e18) return (hashrate / 1e18).toFixed(2) + ' EH/s';
+    if (hashrate >= 1e15) return (hashrate / 1e15).toFixed(2) + ' PH/s';
+    if (hashrate >= 1e12) return (hashrate / 1e12).toFixed(2) + ' TH/s';
+    if (hashrate >= 1e9) return (hashrate / 1e9).toFixed(2) + ' GH/s';
+    if (hashrate >= 1e6) return (hashrate / 1e6).toFixed(2) + ' MH/s';
+    if (hashrate >= 1e3) return (hashrate / 1e3).toFixed(2) + ' KH/s';
+    return hashrate.toFixed(2) + ' H/s';
+}
+
 // Load network status
 async function loadStatus() {
     try {
@@ -32,6 +43,8 @@ async function loadStatus() {
         document.getElementById('syncProgress').textContent = `${statusData.sync.percentage}%`;
         document.getElementById('totalSupply').textContent = formatNumber(Math.round(statsData.totalSupply)) + ' BAD';
         document.getElementById('avgBlockTime').textContent = statsData.avgBlockTime + 's';
+        document.getElementById('hashrate').textContent = formatHashrate(statusData.mining.hashrate);
+        document.getElementById('mempool').textContent = statusData.mining.mempoolSize + ' txs';
     } catch (error) {
         console.error('Error loading status:', error);
     }

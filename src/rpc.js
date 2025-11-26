@@ -72,6 +72,10 @@ class BadcoinRPC {
     return this.call('getdifficulty');
   }
 
+  async getNetworkHashps(nblocks = 120, height = -1) {
+    return this.call('getnetworkhashps', [nblocks, height]);
+  }
+
   // Utility methods
   async getConnectionCount() {
     return this.call('getconnectioncount');
