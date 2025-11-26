@@ -296,6 +296,44 @@ footer a {
     text-decoration: none;
 }
 
+.tip-jar {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.tip-title {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    color: #999;
+}
+
+.tip-addresses {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.tip-address {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tip-label {
+    font-size: 0.85rem;
+    color: #999;
+}
+
+.tip-address code {
+    background: var(--secondary);
+    padding: 0.4rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    user-select: all;
+}
+
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
