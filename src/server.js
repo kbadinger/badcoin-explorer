@@ -16,67 +16,9 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Status cache
-let statusCache = null;
-let statusCacheTime = 0;
-const STATUS_CACHE_TTL = 5000; // 5 seconds
-
-async function updateStatusCache() {
-  try {
-    const [blockchainInfo, networkInfo, mempoolInfo, hashrate, syncStatus, blockCount, txCount] = await Promise.all([
-      rpc.getBlockchainInfo(),
-      rpc.getNetworkInfo(),
-      rpc.getMempoolInfo(),
-      rpc.getNetworkHashps(),
-      SyncStatus.findOne({ key: 'main' }),
-      Block.countDocuments(),
-      Transaction.countDocuments()
-    ]);
-
-    statusCache = {
-      network: {
-        version: networkInfo.version,
-        subversion: networkInfo.subversion,
-        protocolversion: networkInfo.protocolversion,
-        connections: networkInfo.connections
-      },
-      blockchain: {
-        chain: blockchainInfo.chain,
-        blocks: blockchainInfo.blocks,
-        headers: blockchainInfo.headers,
-        difficulty: blockchainInfo.difficulty,
-        mediantime: blockchainInfo.mediantime
-      },
-      mining: {
-        hashrate: hashrate,
-        mempoolSize: mempoolInfo.size,
-        mempoolBytes: mempoolInfo.bytes
-      },
-      sync: {
-        indexedBlocks: syncStatus ? syncStatus.lastBlockHeight + 1 : 0,
-        totalBlocks: blockchainInfo.blocks,
-        percentage: syncStatus ? ((syncStatus.lastBlockHeight + 1) / blockchainInfo.blocks * 100).toFixed(2) : 0,
-        lastSyncTime: syncStatus ? syncStatus.lastSyncTime : null
-      },
-      database: {
-        blocks: blockCount,
-        transactions: txCount
-      }
-    };
-    statusCacheTime = Date.now();
-  } catch (error) {
-    console.error('Error updating status cache:', error.message);
-  }
-}
-
-// Connect to MongoDB, then start cache updates
+// Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('✓ Connected to MongoDB');
-    // Start cache updates only after DB is connected
-    updateStatusCache();
-    setInterval(updateStatusCache, STATUS_CACHE_TTL);
-  })
+  .then(() => console.log('✓ Connected to MongoDB'))
   .catch(err => console.error('MongoDB connection error:', err));
 
 // API Routes
@@ -84,12 +26,6 @@ mongoose.connect(process.env.MONGODB_URI)
 // Network status
 app.get('/api/status', async (req, res) => {
   try {
-    // Return cache if available and fresh
-    if (statusCache && (Date.now() - statusCacheTime) < STATUS_CACHE_TTL) {
-      return res.json(statusCache);
-    }
-
-    // No cache yet or stale - fetch directly
     const [blockchainInfo, networkInfo, mempoolInfo, hashrate, syncStatus, blockCount, txCount] = await Promise.all([
       rpc.getBlockchainInfo(),
       rpc.getNetworkInfo(),
@@ -100,7 +36,7 @@ app.get('/api/status', async (req, res) => {
       Transaction.countDocuments()
     ]);
 
-    const response = {
+    res.json({
       network: {
         version: networkInfo.version,
         subversion: networkInfo.subversion,
@@ -129,13 +65,7 @@ app.get('/api/status', async (req, res) => {
         blocks: blockCount,
         transactions: txCount
       }
-    };
-
-    // Update cache
-    statusCache = response;
-    statusCacheTime = Date.now();
-
-    res.json(response);
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
