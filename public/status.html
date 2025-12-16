@@ -127,7 +127,7 @@
         <div class="config">
             <div>
                 <label>Node URL:</label>
-                <input type="text" id="node-url" value="http://localhost:9332">
+                <input type="text" id="node-url" value="">
             </div>
             <div>
                 <label>Stale Threshold (minutes):</label>
@@ -192,6 +192,9 @@
                 networkEl.textContent = '-';
             }
         }
+
+        // Set default URL to current origin
+        document.getElementById('node-url').value = window.location.origin;
 
         // Initial check and auto-refresh
         checkStatus();
