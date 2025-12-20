@@ -163,18 +163,24 @@
             const networkEl = document.getElementById('network');
 
             try {
-                const response = await fetch(`${nodeUrl}/rest/chaininfo.json`);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                // Get chain info
+                const chainResponse = await fetch(`${nodeUrl}/rest/chaininfo.json`);
+                if (!chainResponse.ok) throw new Error(`HTTP ${chainResponse.status}`);
+                const chainData = await chainResponse.json();
 
-                const data = await response.json();
+                // Get actual block time from tip block
+                const blockResponse = await fetch(`${nodeUrl}/rest/block/${chainData.bestblockhash}.json`);
+                if (!blockResponse.ok) throw new Error(`Block fetch failed`);
+                const blockData = await blockResponse.json();
+
                 const now = Math.floor(Date.now() / 1000);
-                const blockTime = data.mediantime;
+                const blockTime = blockData.time;
                 const timeSince = now - blockTime;
 
-                heightEl.textContent = data.blocks.toLocaleString();
+                heightEl.textContent = chainData.blocks.toLocaleString();
                 timeEl.textContent = formatDate(blockTime);
                 agoEl.textContent = formatTimeAgo(timeSince) + ' ago';
-                networkEl.textContent = data.chain;
+                networkEl.textContent = chainData.chain;
 
                 if (timeSince > staleSeconds) {
                     badge.textContent = 'STALE';
