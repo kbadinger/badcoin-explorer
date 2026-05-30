@@ -38,6 +38,13 @@ class BlockchainSync {
       syncStatus = new SyncStatus({ key: 'main', lastBlockHeight: -1 });
     }
 
+    // Detect and roll back a reorg before syncing forward. If the node's chain
+    // diverged from what we indexed (e.g. the node resynced onto a different
+    // chain), our stored tip hash will no longer match the node's hash at that
+    // height. Walk back to the common ancestor and drop the orphaned blocks so
+    // we re-index the correct chain instead of stacking new blocks on stale ones.
+    await this.handleReorg(syncStatus, chainHeight);
+
     const startHeight = syncStatus.lastBlockHeight + 1;
 
     if (startHeight > chainHeight) {
@@ -63,6 +70,44 @@ class BlockchainSync {
     syncStatus.lastBlockHeight = endHeight;
     syncStatus.lastSyncTime = new Date();
     await syncStatus.save();
+  }
+
+  async handleReorg(syncStatus, chainHeight) {
+    let height = Math.min(syncStatus.lastBlockHeight, chainHeight);
+
+    // Find the highest height where our stored block hash still matches the node.
+    while (height >= 0) {
+      const stored = await Block.findOne({ height }).select('hash');
+      if (!stored) {
+        // Nothing indexed at this height yet — nothing to roll back here.
+        height--;
+        continue;
+      }
+
+      const nodeHash = await rpc.getBlockHash(height);
+      if (stored.hash === nodeHash) {
+        break; // common ancestor found
+      }
+      height--;
+    }
+
+    // If our tip already matches the node, no reorg.
+    if (height === syncStatus.lastBlockHeight) return;
+
+    const ancestor = height; // last good height (-1 means wipe everything)
+    console.log(`⚠ Reorg detected: rolling back blocks above height ${ancestor} (was ${syncStatus.lastBlockHeight})`);
+
+    const orphaned = await Block.find({ height: { $gt: ancestor } }).select('hash');
+    const orphanHashes = orphaned.map(b => b.hash);
+
+    await Transaction.deleteMany({ blockHash: { $in: orphanHashes } });
+    await Block.deleteMany({ height: { $gt: ancestor } });
+
+    syncStatus.lastBlockHeight = ancestor;
+    syncStatus.lastSyncTime = new Date();
+    await syncStatus.save();
+
+    console.log(`✓ Rolled back to height ${ancestor}; will re-index forward from ${ancestor + 1}`);
   }
 
   async indexBlock(height) {
